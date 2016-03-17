@@ -123,7 +123,8 @@ private[spark] class Pool(
 			// need to calculate the GPSCompletionTime first for GPS
 			// also need to remove the jobpool within which all the tasks have finished
 			for (schedulable <- schedulableQueue.asScala){
-				schedulable.GPSCompletionTime = schedulable.jobSubmittingTime + schedulable.jobRunTime
+			//	schedulable.GPSCompletionTime = schedulable.jobSubmittingTime + schedulable.jobRunTime
+        var tmp = schedulable.GPSCompletionTime
 			}
 		}
    	val sortedSchedulableQueue =
