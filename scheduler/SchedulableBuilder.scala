@@ -167,12 +167,12 @@ private[spark] class GPSSchedulableBuilder(val rootPool: Pool)
   }
 
   override def addTaskSetManager(manager: Schedulable, properties: Properties) {
-    val poolName = manager.taskSet.priority.toString
+    val poolName = manager.jobId.toString
     var parentPool = rootPool.getSchedulableByName(poolName)
     if (parentPool == null) {
       // A new job has came; create a new pool for it
       parentPool = new Pool(poolName, SchedulingMode.GPS, DEFAULT_MINIMUM_SHARE, DEFAULT_WEIGHT)
-      parentPool.setPoolProperty(manager.taskSet.priority,
+      parentPool.setPoolProperty(manager.jobId,
         properties.getPriority(GPS_PROPERTY_JOBSUBMITTINGTIME),
         properties.getPriority(GPS_PROPERTY_JOBRUNTIME))
       rootPool.addSchedulable(parentPool)

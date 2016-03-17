@@ -99,6 +99,7 @@ private[spark] class TaskSetManager(
   var calculatedTasks = 0
 
 	// add by cc
+  var jobId = taskSet.priority
   var LCPL = 0
 	def setLCPL(lCPL: Int){
 		LCPL = lCPL

@@ -148,7 +148,7 @@ private[spark] class Pool(
     }
   }
 	// add by cc
-  def setPoolProperty(priority: Int, JobSubmittingTime: Int, JobRunTime: Int){
+  override def setPoolProperty(priority: Int, JobSubmittingTime: Int, JobRunTime: Int){
 		jobId = priority
 		jobSubmittingTime = JobSubmittingTime
 		jobRunTime = JobRunTime
