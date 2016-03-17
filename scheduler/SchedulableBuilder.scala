@@ -173,8 +173,8 @@ private[spark] class GPSSchedulableBuilder(val rootPool: Pool)
       // A new job has came; create a new pool for it
       parentPool = new Pool(poolName, SchedulingMode.GPS, DEFAULT_MINIMUM_SHARE, DEFAULT_WEIGHT)
       parentPool.setPoolProperty(manager.jobId,
-        properties.getProperty(GPS_PROPERTY_JOBSUBMITTINGTIME),
-        properties.getProperty(GPS_PROPERTY_JOBRUNTIME))
+        properties.getProperty(GPS_PROPERTY_JOBSUBMITTINGTIME).toInt,
+        properties.getProperty(GPS_PROPERTY_JOBRUNTIME).toInt)
       rootPool.addSchedulable(parentPool)
       logInfo(("Modified by cc: Created pool(jobId) %s, schedulingMode: GPS, minShare: %d, " +
         "weight: %d").format(poolName, DEFAULT_MINIMUM_SHARE, DEFAULT_WEIGHT))
