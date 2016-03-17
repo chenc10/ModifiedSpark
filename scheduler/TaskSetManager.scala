@@ -98,8 +98,8 @@ private[spark] class TaskSetManager(
   var totalResultSize = 0L
   var calculatedTasks = 0
 
-	//add by cc
-	var LCPL = 0
+	// add by cc
+  var LCPL = 0
 	def setLCPL(lCPL: Int){
 		LCPL = lCPL
 	}

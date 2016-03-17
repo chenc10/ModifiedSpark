@@ -49,7 +49,7 @@ private[spark] class Pool(
   var name = poolName
   var parent: Pool = null
 
-	//add by cc
+	// add by cc
 	var jobId = 0
 	var jobSubmittingTime = 0
 	var jobRunTime = 0
@@ -61,7 +61,8 @@ private[spark] class Pool(
         new FairSchedulingAlgorithm()
       case SchedulingMode.FIFO =>
         new FIFOSchedulingAlgorithm()
-// add by cc
+
+      // add by cc
 			case SchedulingMode.GPS =>
 				new GPSSchedulingAlgorithm()
 			case SchedulingMode.LCP =>
@@ -81,10 +82,10 @@ private[spark] class Pool(
     schedulableQueue.remove(schedulable)
     schedulableNameToSchedulable.remove(schedulable.name)
 		
-		//add by cc
-		// if a jobPool has no taskSetManager, then delete it from rootPool 
-		if(schedulingMode == SchedulingMode.LCP && schedulableQueue.size() == 0){
-			if(parent != null){
+		// add by cc
+		// if a jobPool has no taskSetManager, then delete it from rootPool
+		if (schedulingMode == SchedulingMode.LCP && schedulableQueue.size() == 0){
+			if (parent != null){
 				parent.removeSchedulable(this)
 			}
 		}
@@ -117,11 +118,11 @@ private[spark] class Pool(
 
   override def getSortedTaskSetQueue: ArrayBuffer[TaskSetManager] = {
    	var sortedTaskSetQueue = new ArrayBuffer[TaskSetManager]
-		//add by cc, to be finished
+		// add by cc, to be finished
 		if(schedulingMode == SchedulingMode.GPS){
 			// need to calculate the GPSCompletionTime first for GPS
 			// also need to remove the jobpool within which all the tasks have finished
-			for(schedulable <- schedulableQueue){
+			for (schedulable <- schedulableQueue){
 				schedulable.GPSCompletionTime = schedulable.jobSubmittingTime + schedulable.jobRunTime
 			}
 		}
@@ -146,11 +147,10 @@ private[spark] class Pool(
       parent.decreaseRunningTasks(taskNum)
     }
   }
-
-	//add by cc	
-	def setPoolProperty(priority: Int, JobSubmittingTime: Int, JobRunTime: Int){
+	// add by cc
+  def setPoolProperty(priority: Int, JobSubmittingTime: Int, JobRunTime: Int){
 		jobId = priority
 		jobSubmittingTime = JobSubmittingTime
-		jobRunTime = JobRunTime	
-	}
+		jobRunTime = JobRunTime
+  }
 }

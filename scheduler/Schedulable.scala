@@ -39,8 +39,8 @@ private[spark] trait Schedulable {
   def stageId: Int
   def name: String
 
-	//add by cc
-	def LCPL: Int
+	// add by cc
+  def LCPL: Int
 	def jobId: Int
 	def jobSubmittingTime: Int
 	def jobRunTime: Int

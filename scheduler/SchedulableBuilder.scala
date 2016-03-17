@@ -156,46 +156,30 @@ private[spark] class FairSchedulableBuilder(val rootPool: Pool, conf: SparkConf)
 // add by cc
 private[spark] class GPSSchedulableBuilder(val rootPool: Pool)
   extends SchedulableBuilder with Logging {
-	var DEFAULT_SCHEDULING_MODE = SchedulingMode.LCP
-	var DEFAULT_MINIMUM_SHARE = 0
-	var DEFAULT_WEIGHT = 1
-	var GPS_PROPERTY_JOBSUBMITTINGTIME = "job.jobSubmittingTime"
-	var GPS_PROPERTY_JOBRUNTIME = "job.jobRunTime"
+  var DEFAULT_SCHEDULING_MODE = SchedulingMode.LCP
+  var DEFAULT_MINIMUM_SHARE = 0
+  var DEFAULT_WEIGHT = 1
+  var GPS_PROPERTY_JOBSUBMITTINGTIME = "job.jobSubmittingTime"
+  var GPS_PROPERTY_JOBRUNTIME = "job.jobRunTime"
 
   override def buildPools() {
     // nothing
   }
 
   override def addTaskSetManager(manager: Schedulable, properties: Properties) {
-    var poolName = manager.taskSet.priority.toString 
+    val poolName = manager.taskSet.priority.toString
     var parentPool = rootPool.getSchedulableByName(poolName)
-		if(parentPool == null){
-			//A new job has came; create a new pool for it		
-			parentPool = new Pool(poolName, SchedulingMode.GPS, DEFAULT_MINIMUM_SHARE, DEFAULT_WEIGHT)
-			parentPool.setPoolProperty(manager.taskSet.priority, properties.getPriority(GPS_PROPERTY_JOBSUBMITTINGTIME), properties.getPriority(GPS_PROPERTY_JOBRUNTIME))
-			rootPool.addSchedulable(parentPool)
-      logInfo("Modified by cc: Created pool(jobId) %s, schedulingMode: GPS, minShare: %d, weight: %d".format(
-          poolName, DEFAULT_MINIMUM_SHARE, DEFAULT_WEIGHT))
-		}
-		parentPool.addSchedulable(manager)
-    logInfo("Added task set " + manager.name + " tasks to pool " + poolName)
-
-/*	
-    if (properties != null) {
-      poolName = properties.getProperty(FAIR_SCHEDULER_PROPERTIES, DEFAULT_POOL_NAME)
-      parentPool = rootPool.getSchedulableByName(poolName)
-      if (parentPool == null) {
-        // we will create a new pool that user has configured in app
-        // instead of being defined in xml file
-        parentPool = new Pool(poolName, DEFAULT_SCHEDULING_MODE,
-          DEFAULT_MINIMUM_SHARE, DEFAULT_WEIGHT)
-        rootPool.addSchedulable(parentPool)
-        logInfo("Created pool %s, schedulingMode: %s, minShare: %d, weight: %d".format(
-          poolName, DEFAULT_SCHEDULING_MODE, DEFAULT_MINIMUM_SHARE, DEFAULT_WEIGHT))
-      }
+    if (parentPool == null) {
+      // A new job has came; create a new pool for it
+      parentPool = new Pool(poolName, SchedulingMode.GPS, DEFAULT_MINIMUM_SHARE, DEFAULT_WEIGHT)
+      parentPool.setPoolProperty(manager.taskSet.priority,
+        properties.getPriority(GPS_PROPERTY_JOBSUBMITTINGTIME),
+        properties.getPriority(GPS_PROPERTY_JOBRUNTIME))
+      rootPool.addSchedulable(parentPool)
+      logInfo(("Modified by cc: Created pool(jobId) %s, schedulingMode: GPS, minShare: %d, " +
+        "weight: %d").format(poolName, DEFAULT_MINIMUM_SHARE, DEFAULT_WEIGHT))
     }
     parentPool.addSchedulable(manager)
     logInfo("Added task set " + manager.name + " tasks to pool " + poolName)
   }
-*/
 }
