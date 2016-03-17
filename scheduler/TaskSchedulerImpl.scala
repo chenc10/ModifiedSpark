@@ -124,6 +124,7 @@ private[spark] class TaskSchedulerImpl(
   }
 
   def initialize(backend: SchedulerBackend) {
+    logInfo("Now enter initialize")
     this.backend = backend
     // temporarily set rootPool name to empty
     rootPool = new Pool("", schedulingMode, 0, 0)
@@ -138,6 +139,7 @@ private[spark] class TaskSchedulerImpl(
 					new GPSSchedulableBuilder(rootPool)
       }
     }
+    logInfo("prepare for building pools")
     schedulableBuilder.buildPools()
   }
 
@@ -166,7 +168,7 @@ private[spark] class TaskSchedulerImpl(
     this.synchronized {
       val manager = createTaskSetManager(taskSet, maxTaskFailures)
 
-			//add by cc, to be finished
+			// add by cc, to be finished
 			manager.setLCPL(0)
 
       val stage = taskSet.stageId

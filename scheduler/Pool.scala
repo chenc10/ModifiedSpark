@@ -50,6 +50,7 @@ private[spark] class Pool(
   var parent: Pool = null
 
 	// add by cc
+  logInfo("new pool created; Mode: %s".format(schedulingMode))
 	var jobId = 0
 	var jobSubmittingTime = 0
 	var jobRunTime = 0
