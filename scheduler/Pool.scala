@@ -122,7 +122,7 @@ private[spark] class Pool(
 		if(schedulingMode == SchedulingMode.GPS){
 			// need to calculate the GPSCompletionTime first for GPS
 			// also need to remove the jobpool within which all the tasks have finished
-			for (schedulable <- schedulableQueue){
+			for (schedulable <- schedulableQueue.asScala){
 				schedulable.GPSCompletionTime = schedulable.jobSubmittingTime + schedulable.jobRunTime
 			}
 		}
