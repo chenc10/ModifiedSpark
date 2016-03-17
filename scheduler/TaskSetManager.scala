@@ -100,7 +100,16 @@ private[spark] class TaskSetManager(
 
 	// add by cc
   var jobId = taskSet.priority
+  var jobRunTime = 0
+  var jobSubmittingTime = 0
+  var GPSCompletionTime = 0
   var LCPL = 0
+  override def setPoolProperty(P: Int, JobSubmittingTime: Int, JobRunTime: Int){
+    jobId = P
+    jobSubmittingTime = JobSubmittingTime
+    jobRunTime = JobRunTime
+  }
+
 	def setLCPL(lCPL: Int){
 		LCPL = lCPL
 	}

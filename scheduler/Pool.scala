@@ -54,6 +54,7 @@ private[spark] class Pool(
 	var jobSubmittingTime = 0
 	var jobRunTime = 0
 	var GPSCompletionTime = 0
+  var LCPL = 0
 
   var taskSetSchedulingAlgorithm: SchedulingAlgorithm = {
     schedulingMode match {
@@ -149,8 +150,8 @@ private[spark] class Pool(
     }
   }
 	// add by cc
-  override def setPoolProperty(priority: Int, JobSubmittingTime: Int, JobRunTime: Int){
-		jobId = priority
+  override def setPoolProperty(P: Int, JobSubmittingTime: Int, JobRunTime: Int){
+		jobId = P
 		jobSubmittingTime = JobSubmittingTime
 		jobRunTime = JobRunTime
   }
