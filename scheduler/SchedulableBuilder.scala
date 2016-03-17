@@ -156,11 +156,11 @@ private[spark] class FairSchedulableBuilder(val rootPool: Pool, conf: SparkConf)
 // add by cc
 private[spark] class GPSSchedulableBuilder(val rootPool: Pool)
   extends SchedulableBuilder with Logging {
-  var DEFAULT_SCHEDULING_MODE = SchedulingMode.LCP
-  var DEFAULT_MINIMUM_SHARE = 0
-  var DEFAULT_WEIGHT = 1
-  var GPS_PROPERTY_JOBSUBMITTINGTIME = "job.jobSubmittingTime"
-  var GPS_PROPERTY_JOBRUNTIME = "job.jobRunTime"
+  val DEFAULT_SCHEDULING_MODE = SchedulingMode.LCP
+  val DEFAULT_MINIMUM_SHARE = 0
+  val DEFAULT_WEIGHT = 1
+  val GPS_PROPERTY_JOBSUBMITTINGTIME = "job.jobSubmittingTime"
+  val GPS_PROPERTY_JOBRUNTIME = "job.jobRunTime"
 
   override def buildPools() {
     // nothing
