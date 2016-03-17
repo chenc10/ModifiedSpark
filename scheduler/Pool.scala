@@ -80,6 +80,14 @@ private[spark] class Pool(
   override def removeSchedulable(schedulable: Schedulable) {
     schedulableQueue.remove(schedulable)
     schedulableNameToSchedulable.remove(schedulable.name)
+		
+		//add by cc
+		// if a jobPool has no taskSetManager, then delete it from rootPool 
+		if(schedulingMode == SchedulingMode.LCP && schedulableQueue.size() == 0){
+			if(parent != null){
+				parent.removeSchedulable(this)
+			}
+		}
   }
 
   override def getSchedulableByName(schedulableName: String): Schedulable = {
