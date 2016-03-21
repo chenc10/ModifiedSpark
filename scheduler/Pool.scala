@@ -88,7 +88,6 @@ private[spark] class Pool(
 
   val schedulableQueue = new ConcurrentLinkedQueue[Schedulable]
   val schedulableNameToSchedulable = new ConcurrentHashMap[String, Schedulable]
-  val schedulableIdToSchedulable = new ConcurrentHashMap[Int, Schedulable]
   var weight = initWeight
   var minShare = initMinShare
   var runningTasks = 0
@@ -99,12 +98,12 @@ private[spark] class Pool(
   var name = poolName
   var parent: Pool = null
 
-	// add by cc
+  // add by cc
   logInfo("new pool created; Mode: %s".format(schedulingMode))
-	var jobId = 0
-	var jobSubmittingTime = 0
-	var jobRunTime = 0
-	var GPSCompletionTime = 0
+  var jobId = 0
+  var jobSubmittingTime = 0
+  var jobRunTime = 0
+  var GPSCompletionTime = 0
   var remainingTime = 0
   var LCPL = 0
 
@@ -116,10 +115,10 @@ private[spark] class Pool(
         new FIFOSchedulingAlgorithm()
 
       // add by cc
-			case SchedulingMode.GPS =>
-				new GPSSchedulingAlgorithm()
-			case SchedulingMode.LCP =>
-				new LCPSchedulingAlgorithm()
+      case SchedulingMode.GPS =>
+        new GPSSchedulingAlgorithm()
+      case SchedulingMode.LCP =>
+        new LCPSchedulingAlgorithm()
 
     }
   }
@@ -141,12 +140,12 @@ private[spark] class Pool(
 
     // add by cc
     setGPSCompletionTime()
-		// if a jobPool has no taskSetManager, then delete it from rootPool
-		if (schedulingMode == SchedulingMode.LCP && schedulableQueue.size() == 0){
-			if (parent != null){
-				parent.removeSchedulable(this)
-			}
-		}
+    // if a jobPool has no taskSetManager, then delete it from rootPool
+    if (schedulingMode == SchedulingMode.LCP && schedulableQueue.size() == 0){
+      if (parent != null){
+        parent.removeSchedulable(this)
+      }
+    }
   }
 
   override def getSchedulableByName(schedulableName: String): Schedulable = {
