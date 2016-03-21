@@ -37,8 +37,58 @@ private[spark] class Pool(
   extends Schedulable
   with Logging {
 
+  // add by cc
+  class Event(var time: Int){
+    var eventTime = time
+    var activeJobNameQueue = new ConcurrentLinkedQueue[String]
+
+    def addJob(cname: String): Unit = {
+     activeJobNameQueue.add(cname)
+    }
+
+    def setNextEvent(nextEvent: Event): Unit = {
+     for (jobName <- activeJobNameQueue.asScala){
+       val tmpJob = schedulableNameToSchedulable.get(jobName)
+       tmpJob.GPSCompletionTime = eventTime + tmpJob.remainingTime * activeJobNameQueue.size()
+       if (tmpJob.GPSCompletionTime > nextEvent.eventTime){
+         tmpJob.remainingTime = tmpJob.remainingTime -
+           (nextEvent.eventTime - eventTime) / activeJobNameQueue.size()
+         nextEvent.addJob(tmpJob.name)
+       }
+       else {
+         tmpJob.remainingTime = 0
+         logInfo("The GPSCompletionTime of Job %s : %d"
+           .format(tmpJob.name, tmpJob.GPSCompletionTime))
+       }
+     }
+    }
+  }
+
+  def setGPSCompletionTime(): Unit = {
+    // only calculate GPSCT for GPS scheduling Mode
+    if (schedulingMode != SchedulingMode.GPS) {
+      return
+    }
+    val infEvent = new Event(Int.MaxValue)
+    val timeEventMap = scala.collection.mutable.Map(Int.MaxValue -> infEvent)
+    for (schedulable <- schedulableQueue.asScala) {
+      if (timeEventMap.contains(schedulable.jobSubmittingTime)) {
+        timeEventMap(schedulable.jobSubmittingTime).addJob(schedulable.name)
+      }
+       else
+       {
+          timeEventMap(schedulable.jobSubmittingTime) = new Event(schedulable.jobSubmittingTime)
+          timeEventMap(schedulable.jobSubmittingTime).addJob(schedulable.name)
+       }
+    }
+    val timeEventBuffer = timeEventMap.toBuffer.sortWith(_._1 < _._1)
+    for ( i <- 0 to timeEventBuffer.size - 2)
+      timeEventBuffer(i)._2.setNextEvent(timeEventBuffer(i + 1)._2)
+  }
+
   val schedulableQueue = new ConcurrentLinkedQueue[Schedulable]
   val schedulableNameToSchedulable = new ConcurrentHashMap[String, Schedulable]
+  val schedulableIdToSchedulable = new ConcurrentHashMap[Int, Schedulable]
   var weight = initWeight
   var minShare = initMinShare
   var runningTasks = 0
@@ -55,6 +105,7 @@ private[spark] class Pool(
 	var jobSubmittingTime = 0
 	var jobRunTime = 0
 	var GPSCompletionTime = 0
+  var remainingTime = 0
   var LCPL = 0
 
   var taskSetSchedulingAlgorithm: SchedulingAlgorithm = {
@@ -73,18 +124,23 @@ private[spark] class Pool(
     }
   }
 
+
   override def addSchedulable(schedulable: Schedulable) {
     require(schedulable != null)
     schedulableQueue.add(schedulable)
     schedulableNameToSchedulable.put(schedulable.name, schedulable)
     schedulable.parent = this
+
+    // add by cc
+    setGPSCompletionTime()
   }
 
   override def removeSchedulable(schedulable: Schedulable) {
     schedulableQueue.remove(schedulable)
     schedulableNameToSchedulable.remove(schedulable.name)
-		
-		// add by cc
+
+    // add by cc
+    setGPSCompletionTime()
 		// if a jobPool has no taskSetManager, then delete it from rootPool
 		if (schedulingMode == SchedulingMode.LCP && schedulableQueue.size() == 0){
 			if (parent != null){
@@ -120,15 +176,6 @@ private[spark] class Pool(
 
   override def getSortedTaskSetQueue: ArrayBuffer[TaskSetManager] = {
    	var sortedTaskSetQueue = new ArrayBuffer[TaskSetManager]
-		// add by cc, to be finished
-		if(schedulingMode == SchedulingMode.GPS){
-			// need to calculate the GPSCompletionTime first for GPS
-			// also need to remove the jobpool within which all the tasks have finished
-			for (schedulable <- schedulableQueue.asScala){
-			//	schedulable.GPSCompletionTime = schedulable.jobSubmittingTime + schedulable.jobRunTime
-        var tmp = schedulable.GPSCompletionTime
-			}
-		}
    	val sortedSchedulableQueue =
    	  schedulableQueue.asScala.toSeq.sortWith(taskSetSchedulingAlgorithm.comparator)
    	for (schedulable <- sortedSchedulableQueue) {
@@ -155,10 +202,8 @@ private[spark] class Pool(
     logInfo("enter Pool's setPoolProperty: P: %d, JobSubmittingTime: %d, JobRunTime: %d"
       .format(P, JobSubmittingTime, JobRunTime))
 		jobId = P
-    logInfo("finish Pool's setPoolProperty-1")
 		jobSubmittingTime = JobSubmittingTime
-    logInfo("finish Pool's setPoolProperty-2")
 		jobRunTime = JobRunTime
-    logInfo("finish Pool's setPoolProperty-3")
+    remainingTime = JobRunTime
   }
 }
