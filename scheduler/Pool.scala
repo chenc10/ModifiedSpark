@@ -200,9 +200,9 @@ private[spark] class Pool(
   override def setPoolProperty(P: Int, JobSubmittingTime: Int, JobRunTime: Int){
     logInfo("enter Pool's setPoolProperty: P: %d, JobSubmittingTime: %d, JobRunTime: %d"
       .format(P, JobSubmittingTime, JobRunTime))
-		jobId = P
-		jobSubmittingTime = JobSubmittingTime
-		jobRunTime = JobRunTime
+    jobId = P
+    jobSubmittingTime = JobSubmittingTime
+    jobRunTime = JobRunTime
     remainingTime = JobRunTime
   }
 }

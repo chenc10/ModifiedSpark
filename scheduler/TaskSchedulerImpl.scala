@@ -134,9 +134,9 @@ private[spark] class TaskSchedulerImpl(
           new FIFOSchedulableBuilder(rootPool)
         case SchedulingMode.FAIR =>
           new FairSchedulableBuilder(rootPool, conf)
-				// add by cc
-				case SchedulingMode.GPS =>
-					new GPSSchedulableBuilder(rootPool)
+        // add by cc
+        case SchedulingMode.GPS =>
+          new GPSSchedulableBuilder(rootPool)
       }
     }
     logInfo("prepare for building pools")
