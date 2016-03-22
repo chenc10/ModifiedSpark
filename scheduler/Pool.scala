@@ -66,6 +66,7 @@ private[spark] class Pool(
     }
     val timeEventBuffer = timeEventMap.toBuffer.sortWith(_._1 < _._1)
     while (timeEventBuffer.size > 1){
+      logInfo("enter loop: %d".format(timeEventBuffer.size))
       val tmpEvent = timeEventBuffer.remove(0)._2
       var nextFinishedJobName = ""
       var nextFinishedJobTime = Int.MaxValue
@@ -96,11 +97,15 @@ private[spark] class Pool(
               (nextEvent.eventTime - tmpEvent.eventTime) / tmpEvent.activeJobNameQueue.size()
             nextEvent.addJob(tmpJob.name)
           } else {
+            tmpJob.remainingTime = 0
             logInfo("The GPSCompletionTime of Job %s : %d"
               .format(tmpJob.name, tmpJob.GPSCompletionTime))
           }
         }
-        timeEventBuffer.insert(0, (nextEvent.eventTime, nextEvent))
+        logInfo("add new event to timeEventBuffer")
+        if (nextEvent.activeJobNameQueue.size > 0) {
+          timeEventBuffer.insert(0, (nextEvent.eventTime, nextEvent))
+        }
       }
     }
   }
