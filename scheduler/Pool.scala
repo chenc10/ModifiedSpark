@@ -66,7 +66,6 @@ private[spark] class Pool(
     }
     val timeEventBuffer = timeEventMap.toBuffer.sortWith(_._1 < _._1)
     while (timeEventBuffer.size > 1){
-      logInfo("enter loop: %d".format(timeEventBuffer.size))
       val tmpEvent = timeEventBuffer.remove(0)._2
       var nextFinishedJobName = ""
       var nextFinishedJobTime = Int.MaxValue
@@ -102,7 +101,6 @@ private[spark] class Pool(
               .format(tmpJob.name, tmpJob.GPSCompletionTime))
           }
         }
-        logInfo("add new event to timeEventBuffer")
         if (nextEvent.activeJobNameQueue.size > 0) {
           timeEventBuffer.insert(0, (nextEvent.eventTime, nextEvent))
         }
@@ -129,7 +127,7 @@ private[spark] class Pool(
   var jobRunTime = 0
   var GPSCompletionTime = 0
   var remainingTime = 0
-  var LCPL = 0
+  var CPL = 0
 
   var taskSetSchedulingAlgorithm: SchedulingAlgorithm = {
     schedulingMode match {
@@ -205,6 +203,13 @@ private[spark] class Pool(
    	for (schedulable <- sortedSchedulableQueue) {
    	  sortedTaskSetQueue ++= schedulable.getSortedTaskSetQueue
    	}
+    if (schedulingMode == SchedulingMode.GPS) {
+      for (taskSetManager <- sortedTaskSetQueue) {
+        logInfo("######### Print sortedResult: JobId-%d StageId-%d | GPSCT-%d CPL-%d"
+          .format(taskSetManager.jobId, taskSetManager.stageId,
+            taskSetManager.parent.GPSCompletionTime, taskSetManager.CPL))
+      }
+    }
    	sortedTaskSetQueue
   }
 

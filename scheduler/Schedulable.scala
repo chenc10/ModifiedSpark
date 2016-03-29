@@ -40,7 +40,7 @@ private[spark] trait Schedulable {
   def name: String
 
 	// add by cc
-  def LCPL: Int
+  def CPL: Int
 	def jobId: Int
 	def jobSubmittingTime: Int
 	def jobRunTime: Int
