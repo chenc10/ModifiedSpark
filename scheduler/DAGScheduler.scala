@@ -23,7 +23,7 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 
 import scala.collection.Map
-import scala.collection.mutable.{HashMap, HashSet, Stack}
+import scala.collection.mutable.{HashMap, HashSet, Stack, Queue}
 import scala.concurrent.duration._
 import scala.language.existentials
 import scala.language.postfixOps
@@ -377,7 +377,7 @@ class DAGScheduler(
     val visited = new HashSet[RDD[_]]
     // We are manually maintaining a stack here to prevent StackOverflowError
     // caused by recursively visiting
-    val waitingForVisit = new Stack[RDD[_]]
+    val waitingForVisit = new Queue[RDD[_]]
     def visit(r: RDD[_]) {
       if (!visited(r)) {
         visited += r
@@ -388,14 +388,14 @@ class DAGScheduler(
             case shufDep: ShuffleDependency[_, _, _] =>
               parents += getShuffleMapStage(shufDep, firstJobId)
             case _ =>
-              waitingForVisit.push(dep.rdd)
+              waitingForVisit += (dep.rdd)
           }
         }
       }
     }
-    waitingForVisit.push(rdd)
+    waitingForVisit += (rdd)
     while (waitingForVisit.nonEmpty) {
-      visit(waitingForVisit.pop())
+      visit(waitingForVisit.dequeue())
     }
     parents.toList
   }
@@ -550,11 +550,9 @@ class DAGScheduler(
    * @param callSite where in the user program this job was called
    * @param resultHandler callback to pass each result to
    * @param properties scheduler properties to attach to this job, e.g. fair scheduler pool name
-   *
-   * @return a JobWaiter object that can be used to block until the job finishes executing
+    * @return a JobWaiter object that can be used to block until the job finishes executing
    *         or can be used to cancel the job.
-   *
-   * @throws IllegalArgumentException when partitions ids are illegal
+    * @throws IllegalArgumentException when partitions ids are illegal
    */
   def submitJob[T, U](
       rdd: RDD[T],
@@ -597,8 +595,7 @@ class DAGScheduler(
    * @param callSite where in the user program this job was called
    * @param resultHandler callback to pass each result to
    * @param properties scheduler properties to attach to this job, e.g. fair scheduler pool name
-   *
-   * @throws Exception when the job fails
+    * @throws Exception when the job fails
    */
   def runJob[T, U](
       rdd: RDD[T],
@@ -843,6 +840,10 @@ class DAGScheduler(
     }
 
     val job = new ActiveJob(jobId, finalStage, callSite, listener, properties)
+    // add by cc
+    // set the CPL value of each stage
+    setCPL(finalStage, 0, properties)
+
     clearCacheLocs()
     logInfo("Got job %s (%s) with %d output partitions".format(
       job.jobId, callSite.shortForm, partitions.length))
@@ -863,6 +864,28 @@ class DAGScheduler(
     submitWaitingStages()
   }
 
+  private[scheduler] def setCPL(stage: Stage, bCPL: Int, properties: Properties): Unit = {
+    stage.CPL = bCPL + getStageRunTime(stage, properties)
+    logInfo("the CPL of stage %d is %d".format(stage.id, stage.CPL))
+    for (parent <- stage.parents) {
+     setCPL(parent, stage.CPL, properties)
+   }
+  }
+
+  private[scheduler] def getStageRunTime(stage: Stage, properties: Properties): Int = {
+    val runTimeProperties = properties.getProperty("stage.stageRunTime").split('+')
+    for (property <- runTimeProperties){
+      val tmpProperty = property.split(' ')
+      logInfo("tmpProperty: %s; stage.firstJobId: %d; stage.id: %d".format(tmpProperty, stage.firstJobId, stage.id))
+      if (tmpProperty(0).toInt == stage.firstJobId && tmpProperty(1).toInt == stage.id){
+        tmpProperty(2).toInt
+      }
+    }
+    logWarning("No profiled properties for stage_%d_%d, set as default: 0"
+      .format(stage.firstJobId, stage.id))
+    0
+  }
+
   private[scheduler] def handleMapStageSubmitted(jobId: Int,
       dependency: ShuffleDependency[_, _, _],
       callSite: CallSite,
@@ -871,7 +894,8 @@ class DAGScheduler(
     // Submitting this map stage might still require the creation of some parent stages, so make
     // sure that happens.
     var finalStage: ShuffleMapStage = null
-    try {
+    try
+    {
       // New stage creation may throw an exception if, for example, jobs are run on a
       // HadoopRDD whose underlying HDFS files have been deleted.
       finalStage = getShuffleMapStage(dependency, jobId)

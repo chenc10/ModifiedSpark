@@ -499,7 +499,9 @@ private[spark] class TaskSetManager(
           // a good proxy to task serialization time.
           // val timeTaken = clock.getTime() - startTime
           val taskName = s"task ${info.id} in stage ${taskSet.id}"
-          logInfo(s"Starting $taskName (TID $taskId, $host, partition ${task.partitionId}," +
+
+          logInfo(s"#######################\n##################################" +
+            s"Starting $taskName (TID $taskId, $host, partition ${task.partitionId}," +
             s"$taskLocality, ${serializedTask.limit} bytes)")
 
           sched.dagScheduler.taskStarted(task, info)
@@ -642,7 +644,8 @@ private[spark] class TaskSetManager(
       tasks(index), Success, result.value(), result.accumUpdates, info, result.metrics)
     if (!successful(index)) {
       tasksSuccessful += 1
-      logInfo("Finished task %s in stage %s (TID %d) in %d ms on %s (%d/%d)".format(
+      logInfo(("##############\n################################" +
+        "Finished task %s in stage %s (TID %d) in %d ms on %s (%d/%d)").format(
         info.id, taskSet.id, info.taskId, info.duration, info.host, tasksSuccessful, numTasks))
       // Mark successful and stop if all the tasks have succeeded.
       successful(index) = true
