@@ -874,11 +874,10 @@ class DAGScheduler(
 
   private[scheduler] def getStageRunTime(stage: Stage, properties: Properties): Int = {
     val runTimeProperties = properties.getProperty("stage.stageRunTime").split('+')
-    for (property <- runTimeProperties){
+    for (property <- runTimeProperties) {
       val tmpProperty = property.split(' ')
-      logInfo("tmpProperty: %s; stage.firstJobId: %d; stage.id: %d".format(tmpProperty, stage.firstJobId, stage.id))
       if (tmpProperty(0).toInt == stage.firstJobId && tmpProperty(1).toInt == stage.id){
-        tmpProperty(2).toInt
+        return tmpProperty(2).toInt
       }
     }
     logWarning("No profiled properties for stage_%d_%d, set as default: 0"
