@@ -159,8 +159,6 @@ private[spark] class GPSSchedulableBuilder(val rootPool: Pool)
   val DEFAULT_SCHEDULING_MODE = SchedulingMode.LCP
   val DEFAULT_MINIMUM_SHARE = 0
   val DEFAULT_WEIGHT = 1
-  val GPS_PROPERTY_JOBSUBMITTINGTIME = "job.jobSubmittingTime"
-  val GPS_PROPERTY_JOBRUNTIME = "job.jobRunTime"
 
   override def buildPools() {
     // nothing
@@ -175,9 +173,7 @@ private[spark] class GPSSchedulableBuilder(val rootPool: Pool)
       // A new job has came; create a new pool for it
       parentPool = new Pool(poolName, DEFAULT_SCHEDULING_MODE, DEFAULT_MINIMUM_SHARE,
         DEFAULT_WEIGHT)
-      parentPool.setPoolProperty(manager.jobId,
-        properties.getProperty(GPS_PROPERTY_JOBSUBMITTINGTIME).toInt,
-        properties.getProperty(GPS_PROPERTY_JOBRUNTIME).toInt)
+      parentPool.setPoolProperty(manager.jobId, properties.getProperty("job.profiledInfo"))
       rootPool.addSchedulable(parentPool)
       logInfo("######### Created pool(jobId) %s, schedulingMode: %s)"
         .format(poolName, DEFAULT_SCHEDULING_MODE))

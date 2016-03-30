@@ -141,6 +141,10 @@ class DAGScheduler(
   private[scheduler] val shuffleToMapStage = new HashMap[Int, ShuffleMapStage]
   private[scheduler] val jobIdToActiveJob = new HashMap[Int, ActiveJob]
 
+  // add by cc
+  private[scheduler] val stageIdToStageInfo = new HashMap[Int, (Int, Int)]
+  private[scheduler] val jobIdToAtomicInteger = new HashMap[Int, AtomicInteger]
+
   // Stages we need to run whose parents aren't done
   private[scheduler] val waitingStages = new HashSet[Stage]
 
@@ -298,6 +302,10 @@ class DAGScheduler(
   private def getParentStagesAndId(rdd: RDD[_], firstJobId: Int): (List[Stage], Int) = {
     val parentStages = getParentStages(rdd, firstJobId)
     val id = nextStageId.getAndIncrement()
+    // add by cc
+    stageIdToStageInfo(id) = (firstJobId, jobIdToAtomicInteger(firstJobId).getAndIncrement())
+
+    logInfo("???????? get stageId: %d_%d".format(firstJobId, id))
     (parentStages, id)
   }
 
@@ -570,6 +578,7 @@ class DAGScheduler(
     }
 
     val jobId = nextJobId.getAndIncrement()
+    logInfo("??????? get jobId: %d".format(jobId))
     if (partitions.size == 0) {
       // Return immediately if the job is running 0 tasks
       return new JobWaiter[U](this, jobId, 0, resultHandler)
@@ -831,6 +840,7 @@ class DAGScheduler(
     try {
       // New stage creation may throw an exception if, for example, jobs are run on a
       // HadoopRDD whose underlying HDFS files have been deleted.
+      jobIdToAtomicInteger(jobId) = new AtomicInteger(0)
       finalStage = newResultStage(finalRDD, func, partitions, jobId, callSite)
     } catch {
       case e: Exception =>
@@ -865,18 +875,21 @@ class DAGScheduler(
   }
 
   private[scheduler] def setCPL(stage: Stage, bCPL: Int, properties: Properties): Unit = {
-    stage.CPL = bCPL + getStageRunTime(stage, properties)
+    stage.CPL = bCPL + readStageRunTime(stage, properties)
     logInfo("the CPL of stage %d is %d".format(stage.id, stage.CPL))
     for (parent <- stage.parents) {
      setCPL(parent, stage.CPL, properties)
    }
   }
 
-  private[scheduler] def getStageRunTime(stage: Stage, properties: Properties): Int = {
-    val runTimeProperties = properties.getProperty("stage.stageRunTime").split('+')
+  private[scheduler] def readStageRunTime(stage: Stage, properties: Properties): Int = {
+    val stageIdInJob = stageIdToStageInfo(stage.id)._2
+    logInfo("??????????? Fetching info for stage_%d_%d_(%d)".format(stage.firstJobId,
+      stageIdInJob, stage.id))
+    val runTimeProperties = properties.getProperty("stage.profiledInfo").split(' ')
     for (property <- runTimeProperties) {
-      val tmpProperty = property.split(' ')
-      if (tmpProperty(0).toInt == stage.firstJobId && tmpProperty(1).toInt == stage.id){
+      val tmpProperty = property.split('+')
+      if (tmpProperty(0).toInt == stage.firstJobId && tmpProperty(1).toInt == stageIdInJob){
         return tmpProperty(2).toInt
       }
     }

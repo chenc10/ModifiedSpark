@@ -46,7 +46,7 @@ private[spark] trait Schedulable {
 	def jobRunTime: Int
 	var GPSCompletionTime: Int
   var remainingTime: Int
-  def setPoolProperty(P: Int, JobSubmittingTime: Int, JobRunTime: Int): Unit
+  def setPoolProperty(P: Int, S: String): Unit
 
   def addSchedulable(schedulable: Schedulable): Unit
   def removeSchedulable(schedulable: Schedulable): Unit

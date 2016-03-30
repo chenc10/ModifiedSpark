@@ -39,6 +39,7 @@ private[spark] class Pool(
 
   // add by cc
   class Event(var time: Int){
+    logInfo("Event Time: %d".format(time))
     var eventTime = time
     var activeJobNameQueue = new ConcurrentLinkedQueue[String]
 
@@ -55,6 +56,7 @@ private[spark] class Pool(
     val infEvent = new Event(Int.MaxValue)
     val timeEventMap = scala.collection.mutable.Map(Int.MaxValue -> infEvent)
     for (schedulable <- schedulableQueue.asScala) {
+      schedulable.remainingTime = schedulable.jobRunTime
       if (timeEventMap.contains(schedulable.jobSubmittingTime)) {
         timeEventMap(schedulable.jobSubmittingTime).addJob(schedulable.name)
       }
@@ -65,6 +67,9 @@ private[spark] class Pool(
        }
     }
     val timeEventBuffer = timeEventMap.toBuffer.sortWith(_._1 < _._1)
+    if ( timeEventBuffer.size == 3){
+      logInfo("a")
+    }
     while (timeEventBuffer.size > 1){
       val tmpEvent = timeEventBuffer.remove(0)._2
       var nextFinishedJobName = ""
@@ -227,12 +232,26 @@ private[spark] class Pool(
     }
   }
 	// add by cc
-  override def setPoolProperty(P: Int, JobSubmittingTime: Int, JobRunTime: Int){
+
+  def readJobInfo(P: Int, S: String): (Int, Int) = {
+    val jobInfos = S.split(' ')
+    for ( jobInfo <- jobInfos) {
+      val tmpJobInfo = jobInfo.split('+')
+      if (tmpJobInfo(0).toInt == P){
+        return (tmpJobInfo(1).toInt, tmpJobInfo(2).toInt)
+      }
+    }
+    logWarning("No profiled properties for job_%d".format(P))
+    (0, 0)
+  }
+
+  override def setPoolProperty(P: Int, S: String){
+    val thisJobInfo = readJobInfo(P, S)
     logInfo("enter Pool's setPoolProperty: P: %d, JobSubmittingTime: %d, JobRunTime: %d"
-      .format(P, JobSubmittingTime, JobRunTime))
+      .format(P, thisJobInfo._1, thisJobInfo._2))
     jobId = P
-    jobSubmittingTime = JobSubmittingTime
-    jobRunTime = JobRunTime
-    remainingTime = JobRunTime
+    jobSubmittingTime = thisJobInfo._1
+    jobRunTime = thisJobInfo._2
+    remainingTime = jobRunTime
   }
 }
