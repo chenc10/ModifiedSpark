@@ -2600,7 +2600,9 @@ object SparkContext extends Logging {
     master match {
       case "local" =>
         val scheduler = new TaskSchedulerImpl(sc, MAX_LOCAL_TASK_FAILURES, isLocal = true)
-        val backend = new LocalBackend(sc.getConf, scheduler, 1)
+
+        // add by cc: default: 1, here modified to 4 in order to test LCP algorithm
+        val backend = new LocalBackend(sc.getConf, scheduler, 4)
         scheduler.initialize(backend)
         (backend, scheduler)
 
