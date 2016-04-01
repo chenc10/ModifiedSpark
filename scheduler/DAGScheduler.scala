@@ -886,7 +886,12 @@ class DAGScheduler(
     val stageIdInJob = stageIdToStageInfo(stage.id)._2
     logInfo("??????????? Fetching info for stage_%d_%d_(%d)".format(stage.firstJobId,
       stageIdInJob, stage.id))
-    val runTimeProperties = properties.getProperty("stage.profiledInfo").split(' ')
+    val runTimePropertiesString = properties.getProperty("stage.profiledInfo")
+    if (runTimePropertiesString == null){
+      logWarning("Invalid stage-profiledInfo! ")
+      return 0
+    }
+    val runTimeProperties = runTimePropertiesString.split(' ')
     for (property <- runTimeProperties) {
       val tmpProperty = property.split('+')
       if (tmpProperty(0).toInt == stage.firstJobId && tmpProperty(1).toInt == stageIdInJob){

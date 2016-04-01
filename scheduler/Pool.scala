@@ -234,6 +234,11 @@ private[spark] class Pool(
 	// add by cc
 
   def readJobInfo(P: Int, S: String): (Int, Int) = {
+    // assert( S != null)
+    if (S == null) {
+      logWarning("Invalid job-profiledInfo!")
+      return (0, 0)
+    }
     val jobInfos = S.split(' ')
     for ( jobInfo <- jobInfos) {
       val tmpJobInfo = jobInfo.split('+')
