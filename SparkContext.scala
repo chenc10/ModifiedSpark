@@ -649,8 +649,6 @@ class SparkContext(config: SparkConf) extends Logging with ExecutorAllocationCli
       localProperties.get.remove(key)
     } else {
       localProperties.get.setProperty(key, value)
-      logInfo("key: %s value: %s".format(key, value))
-      logInfo("1Attentino: %s".format(localProperties.get.getProperty("job.profiledInfo")))
     }
   }
 

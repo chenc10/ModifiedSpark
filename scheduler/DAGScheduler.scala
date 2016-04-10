@@ -17,6 +17,9 @@
 
 package org.apache.spark.scheduler
 
+// add by cc
+import scala.io.Source
+
 import java.io.NotSerializableException
 import java.util.Properties
 import java.util.concurrent.TimeUnit
@@ -305,7 +308,7 @@ class DAGScheduler(
     // add by cc
     stageIdToStageInfo(id) = (firstJobId, jobIdToAtomicInteger(firstJobId).getAndIncrement())
 
-    logInfo("???????? get stageId: %d_%d".format(firstJobId, id))
+    logInfo("????? ????? get stageId: %d_%d".format(firstJobId, id))
     (parentStages, id)
   }
 
@@ -578,7 +581,7 @@ class DAGScheduler(
     }
 
     val jobId = nextJobId.getAndIncrement()
-    logInfo("??????? get jobId: %d".format(jobId))
+    logInfo("##### ##### (submitJob() to Queue): jobId: %d".format(jobId))
     if (partitions.size == 0) {
       // Return immediately if the job is running 0 tasks
       return new JobWaiter[U](this, jobId, 0, resultHandler)
@@ -849,15 +852,14 @@ class DAGScheduler(
         return
     }
 
-    logInfo("the properties: job-%s task-%s"
-      .format(properties.get("job.profiledInfo"), properties.get("task.profiledInfo")))
     val job = new ActiveJob(jobId, finalStage, callSite, listener, properties)
+
     // add by cc
     // set the CPL value of each stage
     setCPL(finalStage, 0, properties)
 
     clearCacheLocs()
-    logInfo("Got job %s (%s) with %d output partitions".format(
+    logInfo("DAGSchedulerEventProcessor listener: Got job %s (%s) with %d output partitions".format(
       job.jobId, callSite.shortForm, partitions.length))
     logInfo("Final stage: " + finalStage + " (" + finalStage.name + ")")
     logInfo("Parents of final stage: " + finalStage.parents)
@@ -886,12 +888,19 @@ class DAGScheduler(
 
   private[scheduler] def readStageRunTime(stage: Stage, properties: Properties): Int = {
     val stageIdInJob = stageIdToStageInfo(stage.id)._2
-    logInfo("??????????? Fetching info for stage_%d_%d_(%d)".format(stage.firstJobId,
+    logInfo("????? ????? Fetching info for stage_%d_%d_(%d)".format(stage.firstJobId,
       stageIdInJob, stage.id))
-    val runTimePropertiesString = properties.getProperty("stage.profiledInfo")
+    var runTimePropertiesString = properties.getProperty("stage.profiledInfo")
     if (runTimePropertiesString == null){
-      logWarning("Invalid stage-profiledInfo! ")
-      return 0
+      logWarning("##### ##### Invalid stage-profiledInfo from Property; re-read from file! ")
+      val filename = "/root/spark/stage.profiledInfo"
+      for (line <- Source.fromFile(filename).getLines()) {
+        runTimePropertiesString = line
+      }
+      if (runTimePropertiesString == null) {
+        logWarning("##### ##### Invalid stage-profiledInfo from file! ")
+        return 0
+      }
     }
     val runTimeProperties = runTimePropertiesString.split(' ')
     for (property <- runTimeProperties) {
@@ -900,7 +909,7 @@ class DAGScheduler(
         return tmpProperty(2).toInt
       }
     }
-    logWarning("No profiled properties for stage_%d_%d, set as default: 0"
+    logWarning("##### ##### No profiled properties for stage_%d_%d, set as default: 0"
       .format(stage.firstJobId, stage.id))
     0
   }

@@ -19,6 +19,9 @@ package org.apache.spark.scheduler
 
 import java.util.concurrent.{ConcurrentHashMap, ConcurrentLinkedQueue}
 
+// add by cc
+import scala.io.Source
+
 import scala.collection.JavaConverters._
 import scala.collection.mutable.ArrayBuffer
 
@@ -39,7 +42,7 @@ private[spark] class Pool(
 
   // add by cc
   class Event(var time: Int){
-    logInfo("Event Time: %d".format(time))
+   // logInfo("Event Time: %d".format(time))
     var eventTime = time
     var activeJobNameQueue = new ConcurrentLinkedQueue[String]
 
@@ -67,9 +70,6 @@ private[spark] class Pool(
        }
     }
     val timeEventBuffer = timeEventMap.toBuffer.sortWith(_._1 < _._1)
-    if ( timeEventBuffer.size == 3){
-      logInfo("a")
-    }
     while (timeEventBuffer.size > 1){
       val tmpEvent = timeEventBuffer.remove(0)._2
       var nextFinishedJobName = ""
@@ -102,7 +102,7 @@ private[spark] class Pool(
             nextEvent.addJob(tmpJob.name)
           } else {
             tmpJob.remainingTime = 0
-            logInfo("The GPSCompletionTime of Job %s : %d"
+            logInfo("##### ##### The GPSCompletionTime of Job %s : %d"
               .format(tmpJob.name, tmpJob.GPSCompletionTime))
           }
         }
@@ -126,7 +126,7 @@ private[spark] class Pool(
   var parent: Pool = null
 
   // add by cc
-  logInfo("new pool created; Mode: %s".format(schedulingMode))
+  logInfo("##### ##### new pool created; Mode: %s".format(schedulingMode))
   var jobId = 0
   var jobSubmittingTime = 0
   var jobRunTime = 0
@@ -172,7 +172,7 @@ private[spark] class Pool(
       if (parent != null){
         parent.removeSchedulable(this)
       }
-      logInfo("remove pool: %s".format(this.name))
+      logInfo("##### ##### remove pool: %s".format(this.name))
     }
   }
 
@@ -210,7 +210,7 @@ private[spark] class Pool(
    	}
     if (schedulingMode == SchedulingMode.GPS) {
       for (taskSetManager <- sortedTaskSetQueue) {
-        logInfo("######### Print sortedResult: JobId-%d StageId-%d | GPSCT-%d CPL-%d"
+        logInfo("##### ##### Print sortedResult: JobId-%d StageId-%d | GPSCT-%d CPL-%d"
           .format(taskSetManager.jobId, taskSetManager.stageId,
             taskSetManager.parent.GPSCompletionTime, taskSetManager.CPL))
       }
@@ -235,24 +235,32 @@ private[spark] class Pool(
 
   def readJobInfo(P: Int, S: String): (Int, Int) = {
     // assert( S != null)
-    if (S == null) {
-      logWarning("Invalid job-profiledInfo!")
-      return (0, 0)
+    var TmpS = S
+    if (TmpS == null) {
+      logWarning("##### ##### Invalid property: job-profiledInfo!")
+      val filename = "/root/spark/job.profiledInfo"
+      for (line <- Source.fromFile(filename).getLines()) {
+        TmpS = line
+      }
+      if (TmpS == null){
+        logWarning("##### ##### Invalid file: job.profiledInfo")
+        return (0, 0)
+      }
     }
-    val jobInfos = S.split(' ')
+    val jobInfos = TmpS.split(' ')
     for ( jobInfo <- jobInfos) {
       val tmpJobInfo = jobInfo.split('+')
       if (tmpJobInfo(0).toInt == P){
         return (tmpJobInfo(1).toInt, tmpJobInfo(2).toInt)
       }
     }
-    logWarning("No profiled properties for job_%d".format(P))
+    logWarning("##### ##### No profiled properties for job_%d".format(P))
     (0, 0)
   }
 
   override def setPoolProperty(P: Int, S: String){
     val thisJobInfo = readJobInfo(P, S)
-    logInfo("enter Pool's setPoolProperty: P: %d, JobSubmittingTime: %d, JobRunTime: %d"
+    logInfo("##### ##### enter Pool's setPoolProperty: P: %d, JobSubmittingTime: %d, JobRunTime: %d"
       .format(P, thisJobInfo._1, thisJobInfo._2))
     jobId = P
     jobSubmittingTime = thisJobInfo._1
