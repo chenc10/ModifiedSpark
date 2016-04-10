@@ -649,6 +649,8 @@ class SparkContext(config: SparkConf) extends Logging with ExecutorAllocationCli
       localProperties.get.remove(key)
     } else {
       localProperties.get.setProperty(key, value)
+      logInfo("key: %s value: %s".format(key, value))
+      logInfo("1Attentino: %s".format(localProperties.get.getProperty("job.profiledInfo")))
     }
   }
 
@@ -1829,6 +1831,7 @@ class SparkContext(config: SparkConf) extends Logging with ExecutorAllocationCli
     if (conf.getBoolean("spark.logLineage", false)) {
       logInfo("RDD's recursive dependencies:\n" + rdd.toDebugString)
     }
+    logInfo("Attentino: %s".format(localProperties.get.getProperty("job.profiledInfo")))
     dagScheduler.runJob(rdd, cleanedFunc, partitions, callSite, resultHandler, localProperties.get)
     progressBar.foreach(_.finishAll())
     rdd.doCheckpoint()

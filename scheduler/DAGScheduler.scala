@@ -849,6 +849,8 @@ class DAGScheduler(
         return
     }
 
+    logInfo("the properties: job-%s task-%s"
+      .format(properties.get("job.profiledInfo"), properties.get("task.profiledInfo")))
     val job = new ActiveJob(jobId, finalStage, callSite, listener, properties)
     // add by cc
     // set the CPL value of each stage
