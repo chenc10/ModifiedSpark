@@ -496,7 +496,7 @@ private[spark] class TaskSetManager(
           // val timeTaken = clock.getTime() - startTime
           val taskName = s"task ${info.id} in stage ${taskSet.id}"
 
-          logInfo(s"#######################\n##################################" +
+          logInfo(s"##### " +
             s"Starting $taskName (TID $taskId, $host, partition ${task.partitionId}," +
             s"$taskLocality, ${serializedTask.limit} bytes)")
 
@@ -640,7 +640,7 @@ private[spark] class TaskSetManager(
       tasks(index), Success, result.value(), result.accumUpdates, info, result.metrics)
     if (!successful(index)) {
       tasksSuccessful += 1
-      logInfo(("##############\n################################" +
+      logInfo(("##### ##### ##### " +
         "Finished task %s in stage %s (TID %d) in %d ms on %s (%d/%d)").format(
         info.id, taskSet.id, info.taskId, info.duration, info.host, tasksSuccessful, numTasks))
       // Mark successful and stop if all the tasks have succeeded.

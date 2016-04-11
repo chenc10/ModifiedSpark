@@ -620,10 +620,10 @@ class DAGScheduler(
     val waiter = submitJob(rdd, func, partitions, callSite, resultHandler, properties)
     waiter.awaitResult() match {
       case JobSucceeded =>
-        logInfo("Job %d finished: %s, took %f s".format
+        logInfo(" ***** ***** ***** ***** Job %d finished: %s, took %f s".format
           (waiter.jobId, callSite.shortForm, (System.nanoTime - start) / 1e9))
       case JobFailed(exception: Exception) =>
-        logInfo("Job %d failed: %s, took %f s".format
+        logInfo(" ***** ***** ***** Job %d failed: %s, took %f s".format
           (waiter.jobId, callSite.shortForm, (System.nanoTime - start) / 1e9))
         // SPARK-8644: Include user stack trace in exceptions coming from DAGScheduler.
         val callerStackTrace = Thread.currentThread().getStackTrace.tail
@@ -1434,7 +1434,8 @@ class DAGScheduler(
       case _ => "Unknown"
     }
     if (errorMessage.isEmpty) {
-      logInfo("%s (%s) finished in %s s".format(stage, stage.name, serviceTime))
+      logInfo(" %s (%s) finished in %s s"
+        .format(stage, stage.name, serviceTime))
       stage.latestInfo.completionTime = Some(clock.getTimeMillis())
 
       // Clear failure count for this stage, now that it's succeeded.

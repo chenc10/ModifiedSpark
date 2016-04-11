@@ -210,10 +210,19 @@ private[spark] class Pool(
    	}
     if (schedulingMode == SchedulingMode.GPS) {
       for (taskSetManager <- sortedTaskSetQueue) {
-        logInfo("##### ##### Print sortedResult: JobId-%d StageId-%d | GPSCT-%d CPL-%d"
+        logInfo("##### ##### Print sortedResult in Queue: JobId-%d StageId-%d | GPSCT-%d CPL-%d"
           .format(taskSetManager.jobId, taskSetManager.stageId,
             taskSetManager.parent.GPSCompletionTime, taskSetManager.CPL))
       }
+      logInfo("##### ##### End printing in GPS")
+    }
+    if (schedulingMode == SchedulingMode.FAIR) {
+      for (taskSetManager <- sortedTaskSetQueue) {
+        logInfo("##### ##### Print sortedResult in Queue: JobId-%d StageId-%d | RunningTasks-%d"
+          .format(taskSetManager.jobId, taskSetManager.stageId,
+            taskSetManager.parent.runningTasks))
+      }
+      logInfo("##### ##### End printing in FAIR")
     }
    	sortedTaskSetQueue
   }
@@ -254,7 +263,7 @@ private[spark] class Pool(
         return (tmpJobInfo(1).toInt, tmpJobInfo(2).toInt)
       }
     }
-    logWarning("##### ##### No profiled properties for job_%d".format(P))
+    logWarning("##### ##### No profiled properties for job_%d, read from File".format(P))
     (0, 0)
   }
 
