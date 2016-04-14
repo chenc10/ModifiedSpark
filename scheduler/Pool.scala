@@ -62,7 +62,9 @@ private[spark] class Pool(
           nextT = Long.MaxValue
         } else {
           fairShareRate = 1 / activeJobNameList.size.toDouble
-          nextT = currentTime + (activeJobNameList(0)._2 - virtualTime) * activeJobNameList.size
+          logInfo("$$$$ $$$$ $$$$ smallest_F: %d".format(activeJobNameList(0)._2))
+          nextT = realTime + (activeJobNameList(0)._2 - virtualTime) * activeJobNameList.size
+          logInfo("$$$$ $$$$ $$$$ nextT: %d".format(nextT%1000000))
         }
       }
       logInfo("$$$$ $$$$ $$$$ handling: %s; %d %f".format(cname, virtualTime, fairShareRate))
