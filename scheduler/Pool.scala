@@ -41,77 +41,116 @@ private[spark] class Pool(
   with Logging {
 
   // add by cc
-  class Event(var time: Int){
+  class Event(){
    // logInfo("Event Time: %d".format(time))
-    var eventTime = time
-    var activeJobNameQueue = new ConcurrentLinkedQueue[String]
+    var realTime = System.currentTimeMillis()/1000
+    var virtualTime = 0
+    var nextT = Long.MaxValue
+    var fairShareRate = 0.toDouble
+    var activeJobNameList = new ArrayBuffer[(String, Int)]
 
     def addJob(cname: String): Unit = {
-     activeJobNameQueue.add(cname)
+      val currentTime = System.currentTimeMillis()/1000
+      logInfo("$$$$$\n $$$$$$$$$$ enter currentTime (%d) Vs nextT (%d)".format(currentTime%1000000,
+        nextT%1000000))
+      while (currentTime > nextT){
+        virtualTime = virtualTime + ((nextT - realTime)*fairShareRate).toInt
+        realTime = nextT
+        activeJobNameList.remove(0)
+        if(activeJobNameList.size == 0){
+          fairShareRate = 0.toDouble
+          nextT = Long.MaxValue
+        } else {
+          fairShareRate = 1 / activeJobNameList.size.toDouble
+          nextT = currentTime + (activeJobNameList(0)._2 - virtualTime) * activeJobNameList.size
+        }
+      }
+      logInfo("$$$$ $$$$ $$$$ handling: %s; %d %f".format(cname, virtualTime, fairShareRate))
+      virtualTime = virtualTime + ((currentTime - realTime) * fairShareRate).toInt
+      logInfo("$$$$ $$$$ $$$$ currentVirtualTime: %d".format(virtualTime))
+      val currentJob = schedulableNameToSchedulable.get(cname)
+      currentJob.GPSCompletionTime = virtualTime + currentJob.jobRunTime
+      logInfo("$$$$ $$$$ $$$$ vCT: %d (jobRunTime: %d)"
+        .format(currentJob.GPSCompletionTime, currentJob.jobRunTime))
+
+      realTime = currentTime
+      activeJobNameList.+=((cname, currentJob.GPSCompletionTime))
+      fairShareRate = 1/activeJobNameList.size.toDouble
+      activeJobNameList = activeJobNameList.sortWith(_._2 < _._2)
+      logInfo("$$$$ $$$$ $$$$ smallest_F: %d".format(activeJobNameList(0)._2))
+      nextT = currentTime + (activeJobNameList(0)._2 - virtualTime) * activeJobNameList.size
+      logInfo("$$$$ $$$$ $$$$ nextT: %d".format(nextT%1000000))
+      // udpate GPST and Event
     }
   }
 
-  def setGPSCompletionTime(): Unit = {
-    // only calculate GPSCT for GPS scheduling Mode
-    if (schedulingMode != SchedulingMode.GPS) {
-      return
-    }
-    val infEvent = new Event(Int.MaxValue)
-    val timeEventMap = scala.collection.mutable.Map(Int.MaxValue -> infEvent)
-    for (schedulable <- schedulableQueue.asScala) {
-      schedulable.remainingTime = schedulable.jobRunTime
-      if (timeEventMap.contains(schedulable.jobSubmittingTime)) {
-        timeEventMap(schedulable.jobSubmittingTime).addJob(schedulable.name)
-      }
-       else
-       {
-          timeEventMap(schedulable.jobSubmittingTime) = new Event(schedulable.jobSubmittingTime)
-          timeEventMap(schedulable.jobSubmittingTime).addJob(schedulable.name)
-       }
-    }
-    val timeEventBuffer = timeEventMap.toBuffer.sortWith(_._1 < _._1)
-    while (timeEventBuffer.size > 1){
-      val tmpEvent = timeEventBuffer.remove(0)._2
-      var nextFinishedJobName = ""
-      var nextFinishedJobTime = Int.MaxValue
-      for (jobName <- tmpEvent.activeJobNameQueue.asScala) {
-        val tmpJob = schedulableNameToSchedulable.get(jobName)
-        tmpJob.GPSCompletionTime = tmpEvent.eventTime +
-          tmpJob.remainingTime * tmpEvent.activeJobNameQueue.size()
-        if (tmpJob.GPSCompletionTime < nextFinishedJobTime) {
-          nextFinishedJobTime = tmpJob.GPSCompletionTime
-          nextFinishedJobName = tmpJob.name
-        }
-      }
-      if (nextFinishedJobTime > timeEventBuffer(0)._2.eventTime) {
-        val nextEvent = timeEventBuffer(0)._2
-        for (jobName <- tmpEvent.activeJobNameQueue.asScala) {
-          val tmpJob = schedulableNameToSchedulable.get(jobName)
-          tmpJob.remainingTime = tmpJob.remainingTime -
-            (nextEvent.eventTime - tmpEvent.eventTime) / tmpEvent.activeJobNameQueue.size()
-          nextEvent.addJob(tmpJob.name)
-        }
-      }
-      else {
-        val nextEvent = new Event(nextFinishedJobTime)
-        for (jobName <- tmpEvent.activeJobNameQueue.asScala) {
-          val tmpJob = schedulableNameToSchedulable.get(jobName)
-          if (tmpJob.GPSCompletionTime > nextFinishedJobTime) {
-            tmpJob.remainingTime = tmpJob.remainingTime -
-              (nextEvent.eventTime - tmpEvent.eventTime) / tmpEvent.activeJobNameQueue.size()
-            nextEvent.addJob(tmpJob.name)
-          } else {
-            tmpJob.remainingTime = 0
-            logInfo("##### ##### The GPSCompletionTime of Job %s : %d"
-              .format(tmpJob.name, tmpJob.GPSCompletionTime))
-          }
-        }
-        if (nextEvent.activeJobNameQueue.size > 0) {
-          timeEventBuffer.insert(0, (nextEvent.eventTime, nextEvent))
-        }
-      }
-    }
-  }
+  val CEvent = new Event()
+//  var lastEvent:Event = {
+//    if(schedulingMode == SchedulingMode.GPS){
+//    }
+//  }
+
+//  def setGPSCompletionTime(): Unit = {
+//    // only calculate GPSCT for GPS scheduling Mode
+//    if (schedulingMode != SchedulingMode.GPS) {
+//      return
+//    }
+//    val infEvent = new Event(Int.MaxValue)
+//    val timeEventMap = scala.collection.mutable.Map(Int.MaxValue -> infEvent)
+//    for (schedulable <- schedulableQueue.asScala) {
+//      schedulable.remainingTime = schedulable.jobRunTime
+//      if (timeEventMap.contains(schedulable.jobSubmittingTime)) {
+//        timeEventMap(schedulable.jobSubmittingTime).addJob(schedulable.name)
+//      }
+//       else
+//       {
+//          timeEventMap(schedulable.jobSubmittingTime) = new Event(schedulable.jobSubmittingTime)
+//          timeEventMap(schedulable.jobSubmittingTime).addJob(schedulable.name)
+//       }
+//    }
+//    val timeEventBuffer = timeEventMap.toBuffer.sortWith(_._1 < _._1)
+//    while (timeEventBuffer.size > 1){
+//      val tmpEvent = timeEventBuffer.remove(0)._2
+//      var nextFinishedJobName = ""
+//      var nextFinishedJobTime = Int.MaxValue
+//      for (jobName <- tmpEvent.activeJobNameQueue.asScala) {
+//        val tmpJob = schedulableNameToSchedulable.get(jobName)
+//        tmpJob.GPSCompletionTime = tmpEvent.eventTime +
+//          tmpJob.remainingTime * tmpEvent.activeJobNameQueue.size()
+//        if (tmpJob.GPSCompletionTime < nextFinishedJobTime) {
+//          nextFinishedJobTime = tmpJob.GPSCompletionTime
+//          nextFinishedJobName = tmpJob.name
+//        }
+//      }
+//      if (nextFinishedJobTime > timeEventBuffer(0)._2.eventTime) {
+//        val nextEvent = timeEventBuffer(0)._2
+//        for (jobName <- tmpEvent.activeJobNameQueue.asScala) {
+//          val tmpJob = schedulableNameToSchedulable.get(jobName)
+//          tmpJob.remainingTime = tmpJob.remainingTime -
+//            (nextEvent.eventTime - tmpEvent.eventTime) / tmpEvent.activeJobNameQueue.size()
+//          nextEvent.addJob(tmpJob.name)
+//        }
+//      }
+//      else {
+//        val nextEvent = new Event(nextFinishedJobTime)
+//        for (jobName <- tmpEvent.activeJobNameQueue.asScala) {
+//          val tmpJob = schedulableNameToSchedulable.get(jobName)
+//          if (tmpJob.GPSCompletionTime > nextFinishedJobTime) {
+//            tmpJob.remainingTime = tmpJob.remainingTime -
+//              (nextEvent.eventTime - tmpEvent.eventTime) / tmpEvent.activeJobNameQueue.size()
+//            nextEvent.addJob(tmpJob.name)
+//          } else {
+//            tmpJob.remainingTime = 0
+//            logInfo("##### ##### The GPSCompletionTime of Job %s : %d"
+//              .format(tmpJob.name, tmpJob.GPSCompletionTime))
+//          }
+//        }
+//        if (nextEvent.activeJobNameQueue.size > 0) {
+//          timeEventBuffer.insert(0, (nextEvent.eventTime, nextEvent))
+//        }
+//      }
+//    }
+//  }
 
   val schedulableQueue = new ConcurrentLinkedQueue[Schedulable]
   val schedulableNameToSchedulable = new ConcurrentHashMap[String, Schedulable]
@@ -146,7 +185,6 @@ private[spark] class Pool(
         new GPSSchedulingAlgorithm()
       case SchedulingMode.LCP =>
         new LCPSchedulingAlgorithm()
-
     }
   }
 
@@ -158,7 +196,9 @@ private[spark] class Pool(
     schedulable.parent = this
 
     // add by cc
-    setGPSCompletionTime()
+    if (schedulingMode == SchedulingMode.GPS){
+      CEvent.addJob(schedulable.name)
+    }
   }
 
   override def removeSchedulable(schedulable: Schedulable) {
@@ -166,7 +206,6 @@ private[spark] class Pool(
     schedulableNameToSchedulable.remove(schedulable.name)
 
     // add by cc
-    setGPSCompletionTime()
     // if a jobPool has no taskSetManager, then delete it from rootPool
     if (schedulingMode == SchedulingMode.LCP && schedulableQueue.size() == 0){
       if (parent != null){
