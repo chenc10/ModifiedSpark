@@ -19,6 +19,7 @@ package org.apache.spark.scheduler
 
 // add by cc
 import scala.io.Source
+import java.sql.{Connection, DriverManager, ResultSet}
 
 import java.io.NotSerializableException
 import java.util.Properties
@@ -132,6 +133,18 @@ class DAGScheduler(
   }
 
   def this(sc: SparkContext) = this(sc, sc.taskScheduler)
+
+  val driver = "com.mysql.jdbc.Driver"
+  Class.forName(driver)
+  var url = sc.getLocalProperty("spark.db.name")
+  if (url == null) {
+    url = "jdbc:mysql://localhost/spark"
+  }
+  val username = "root"
+  val password = "root"
+  var connection: Connection = null
+  connection = DriverManager.getConnection(url, username, password)
+  val statement = connection.createStatement()
 
   private[spark] val metricsSource: DAGSchedulerSource = new DAGSchedulerSource(this)
 
@@ -887,31 +900,21 @@ class DAGScheduler(
   }
 
   private[scheduler] def readStageRunTime(stage: Stage, properties: Properties): Int = {
-    val stageIdInJob = stageIdToStageInfo(stage.id)._2
-    logInfo("????? ????? Fetching info for stage_%d_%d_(%d)".format(stage.firstJobId,
-      stageIdInJob, stage.id))
-    var runTimePropertiesString = properties.getProperty("stage.profiledInfo")
-    if (runTimePropertiesString == null){
-      logWarning("##### ##### Invalid stage-profiledInfo from Property; re-read from file! ")
-      val filename = "/root/spark/stage.profiledInfo"
-      for (line <- Source.fromFile(filename).getLines()) {
-        runTimePropertiesString = line
+    logInfo("????? ????? Fetching info for stage_%d_(JobId: %d)".format(
+      stage.id, stage.firstJobId))
+
+      // create the statement, and run the select query
+      val query = "SELECT * FROM stages WHERE appId = %d and stageId = %d"
+        .format(0, stage.id)
+      val resultSet = statement.executeQuery(query)
+      while(resultSet.next()){
+       val result = resultSet.getInt("stageRunTime")
+        logInfo("get stage.profiledInfo from db: %d\n".format(result))
+        return result
+//      return resultSet.getInt("stageRunTime")
       }
-      if (runTimePropertiesString == null) {
-        logWarning("##### ##### Invalid stage-profiledInfo from file! ")
-        return 0
-      }
-    }
-    val runTimeProperties = runTimePropertiesString.split(' ')
-    for (property <- runTimeProperties) {
-      val tmpProperty = property.split('+')
-      if (tmpProperty(0).toInt == stage.firstJobId && tmpProperty(1).toInt == stageIdInJob){
-        return tmpProperty(2).toInt
-      }
-    }
-    logWarning("##### ##### No profiled properties for stage_%d_%d, set as default: 0"
-      .format(stage.firstJobId, stage.id))
-    0
+      logWarning("##### ##### Invalid stage-profiledInfo, set as 0")
+      0
   }
 
   private[scheduler] def handleMapStageSubmitted(jobId: Int,
@@ -1633,6 +1636,7 @@ class DAGScheduler(
     messageScheduler.shutdownNow()
     eventProcessLoop.stop()
     taskScheduler.stop()
+    connection.close()
   }
 
   eventProcessLoop.start()
