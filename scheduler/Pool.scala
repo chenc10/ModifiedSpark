@@ -43,16 +43,16 @@ private[spark] class Pool(
   // add by cc
   class Event(){
    // logInfo("Event Time: %d".format(time))
-    var realTime = System.currentTimeMillis()/1000
+    var realTime = System.currentTimeMillis()
     var virtualTime = 0
     var nextT = Long.MaxValue
     var fairShareRate = 0.toDouble
     var activeJobNameList = new ArrayBuffer[(String, Int)]
 
     def addJob(cname: String): Unit = {
-      val currentTime = System.currentTimeMillis()/1000
-      logInfo("$$$$$\n $$$$$$$$$$ enter currentTime (%d) Vs nextT (%d)".format(currentTime%1000000,
-        nextT%1000000))
+      val currentTime = System.currentTimeMillis()
+    logInfo("$$$$$\n $$$$$$$$$$ enter currentTime (%d) Vs nextT (%d)".format(currentTime%1000000,
+      nextT%1000000))
       while (currentTime > nextT){
         virtualTime = virtualTime + ((nextT - realTime)*fairShareRate).toInt
         realTime = nextT

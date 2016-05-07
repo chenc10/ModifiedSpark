@@ -134,17 +134,17 @@ class DAGScheduler(
 
   def this(sc: SparkContext) = this(sc, sc.taskScheduler)
 
-  val driver = "com.mysql.jdbc.Driver"
-  Class.forName(driver)
-  var url = sc.getLocalProperty("spark.db.name")
-  if (url == null) {
-    url = "jdbc:mysql://localhost/spark"
-  }
-  val username = "root"
-  val password = "root"
-  var connection: Connection = null
-  connection = DriverManager.getConnection(url, username, password)
-  val statement = connection.createStatement()
+//  val driver = "com.mysql.jdbc.Driver"
+//  Class.forName(driver)
+//  var url = sc.getLocalProperty("spark.db.name")
+//  if (url == null) {
+//    url = "jdbc:mysql://localhost/spark"
+//  }
+//  val username = "root"
+//  val password = "root"
+//  var connection: Connection = null
+//  connection = DriverManager.getConnection(url, username, password)
+//  val statement = connection.createStatement()
 
   private[spark] val metricsSource: DAGSchedulerSource = new DAGSchedulerSource(this)
 
@@ -892,6 +892,7 @@ class DAGScheduler(
   }
 
   private[scheduler] def setCPL(stage: Stage, bCPL: Int, properties: Properties): Unit = {
+    return
     stage.CPL = bCPL + readStageRunTime(stage, properties)
     logInfo("the CPL of stage %d is %d".format(stage.id, stage.CPL))
     for (parent <- stage.parents) {
@@ -900,19 +901,19 @@ class DAGScheduler(
   }
 
   private[scheduler] def readStageRunTime(stage: Stage, properties: Properties): Int = {
-    logInfo("????? ????? Fetching info for stage_%d_(JobId: %d)".format(
-      stage.id, stage.firstJobId))
-
-      // create the statement, and run the select query
-      val query = "SELECT * FROM stages WHERE appId = %d and stageId = %d"
-        .format(0, stage.id)
-      val resultSet = statement.executeQuery(query)
-      while(resultSet.next()){
-       val result = resultSet.getInt("stageRunTime")
-        logInfo("get stage.profiledInfo from db: %d\n".format(result))
-        return result
+//    logInfo("????? ????? Fetching info for stage_%d_(JobId: %d)".format(
+//      stage.id, stage.firstJobId))
+//
+//      // create the statement, and run the select query
+//      val query = "SELECT * FROM stages WHERE appId = %d and stageId = %d"
+//        .format(0, stage.id)
+//      val resultSet = statement.executeQuery(query)
+//      while(resultSet.next()){
+//       val result = resultSet.getInt("stageRunTime")
+//        logInfo("get stage.profiledInfo from db: %d\n".format(result))
+//        return result
 //      return resultSet.getInt("stageRunTime")
-      }
+//      }
       logWarning("##### ##### Invalid stage-profiledInfo, set as 0")
       0
   }
@@ -1636,7 +1637,7 @@ class DAGScheduler(
     messageScheduler.shutdownNow()
     eventProcessLoop.stop()
     taskScheduler.stop()
-    connection.close()
+//    connection.close()
   }
 
   eventProcessLoop.start()
