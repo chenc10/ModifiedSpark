@@ -869,7 +869,7 @@ class DAGScheduler(
 
     // add by cc
     // set the CPL value of each stage
-    setCPL(finalStage, 0, properties)
+//    setCPL(finalStage, 0, properties)
 
     clearCacheLocs()
     logInfo("DAGSchedulerEventProcessor listener: Got job %s (%s) with %d output partitions".format(
@@ -891,16 +891,15 @@ class DAGScheduler(
     submitWaitingStages()
   }
 
-  private[scheduler] def setCPL(stage: Stage, bCPL: Int, properties: Properties): Unit = {
-    return
-    stage.CPL = bCPL + readStageRunTime(stage, properties)
-    logInfo("the CPL of stage %d is %d".format(stage.id, stage.CPL))
-    for (parent <- stage.parents) {
-     setCPL(parent, stage.CPL, properties)
-   }
-  }
+//  private[scheduler] def setCPL(stage: Stage, bCPL: Int, properties: Properties): Unit = {
+//    stage.CPL = bCPL + readStageRunTime(stage, properties)
+//    logInfo("the CPL of stage %d is %d".format(stage.id, stage.CPL))
+//    for (parent <- stage.parents) {
+//     setCPL(parent, stage.CPL, properties)
+//   }
+//  }
 
-  private[scheduler] def readStageRunTime(stage: Stage, properties: Properties): Int = {
+//  private[scheduler] def readStageRunTime(stage: Stage, properties: Properties): Int = {
 //    logInfo("????? ????? Fetching info for stage_%d_(JobId: %d)".format(
 //      stage.id, stage.firstJobId))
 //
@@ -914,9 +913,9 @@ class DAGScheduler(
 //        return result
 //      return resultSet.getInt("stageRunTime")
 //      }
-      logWarning("##### ##### Invalid stage-profiledInfo, set as 0")
-      0
-  }
+//      logWarning("##### ##### Invalid stage-profiledInfo, set as 0")
+//      0
+//  }
 
   private[scheduler] def handleMapStageSubmitted(jobId: Int,
       dependency: ShuffleDependency[_, _, _],
@@ -1106,7 +1105,7 @@ class DAGScheduler(
       stage.pendingPartitions ++= tasks.map(_.partitionId)
       logDebug("New pending partitions: " + stage.pendingPartitions)
       taskScheduler.submitTasks(new TaskSet(
-        tasks.toArray, stage.id, stage.latestInfo.attemptId, jobId, properties, stage.CPL))
+        tasks.toArray, stage.id, stage.latestInfo.attemptId, jobId, properties))
       stage.latestInfo.submissionTime = Some(clock.getTimeMillis())
     } else {
       // Because we posted SparkListenerStageSubmitted earlier, we should mark

@@ -75,7 +75,7 @@ private[scheduler] abstract class Stage(
   val details: String = callSite.longForm
 
   // add by cc
-  var CPL: Int = 0
+//  var CPL: Int = 0
 
   private var _internalAccumulators: Seq[Accumulator[Long]] = Seq.empty
 

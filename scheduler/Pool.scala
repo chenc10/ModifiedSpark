@@ -172,8 +172,7 @@ private[spark] class Pool(
   var jobSubmittingTime = 0
   var jobRunTime = 0
   var GPSCompletionTime = 0
-  var remainingTime = 0
-  var CPL = 0
+//  var remainingTime = 0
 
   var taskSetSchedulingAlgorithm: SchedulingAlgorithm = {
     schedulingMode match {
@@ -185,8 +184,8 @@ private[spark] class Pool(
       // add by cc
       case SchedulingMode.GPS =>
         new GPSSchedulingAlgorithm()
-      case SchedulingMode.LCP =>
-        new LCPSchedulingAlgorithm()
+      case SchedulingMode.SJF =>
+        new SJFSchedulingAlgorithm()
     }
   }
 
@@ -209,11 +208,14 @@ private[spark] class Pool(
 
     // add by cc
     // if a jobPool has no taskSetManager, then delete it from rootPool
-    if (schedulingMode == SchedulingMode.LCP && schedulableQueue.size() == 0){
-      if (parent != null){
+    if (parent == null){
+      return
+    }
+    if (parent.schedulingMode==SchedulingMode.GPS || parent.schedulingMode==SchedulingMode.SJF) {
+      if (schedulableQueue.size() == 0) {
         parent.removeSchedulable(this)
+        logInfo("##### ##### remove pool: %s".format(this.name))
       }
-      logInfo("##### ##### remove pool: %s".format(this.name))
     }
   }
 
@@ -251,11 +253,19 @@ private[spark] class Pool(
    	}
     if (schedulingMode == SchedulingMode.GPS) {
       for (taskSetManager <- sortedTaskSetQueue) {
-        logInfo("##### ##### Print sortedResult in Queue: JobId-%d StageId-%d | GPSCT-%d CPL-%d"
+        logInfo("##### ##### Print sortedResult in Queue: JobId-%d StageId-%d | GPSCT-%d"
           .format(taskSetManager.jobId, taskSetManager.stageId,
-            taskSetManager.parent.GPSCompletionTime, taskSetManager.CPL))
+            taskSetManager.parent.GPSCompletionTime))
       }
       logInfo("##### ##### End printing in GPS")
+    }
+    if (schedulingMode == SchedulingMode.SJF) {
+      for (taskSetManager <- sortedTaskSetQueue) {
+        logInfo("##### ##### Print sortedResult in Queue: JobId-%d StageId-%d | jobRunTime-%d"
+          .format(taskSetManager.jobId, taskSetManager.stageId,
+            taskSetManager.parent.jobRunTime))
+      }
+      logInfo("##### ##### End printing in SJF")
     }
     if (schedulingMode == SchedulingMode.FAIR) {
       for (taskSetManager <- sortedTaskSetQueue) {
@@ -315,6 +325,6 @@ private[spark] class Pool(
     jobId = P
     jobSubmittingTime = thisJobInfo._1
     jobRunTime = thisJobInfo._2
-    remainingTime = jobRunTime
+//    remainingTime = jobRunTime
   }
 }

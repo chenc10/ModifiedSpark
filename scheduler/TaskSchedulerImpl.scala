@@ -137,6 +137,8 @@ private[spark] class TaskSchedulerImpl(
         // add by cc
         case SchedulingMode.GPS =>
           new GPSSchedulableBuilder(rootPool)
+        case SchedulingMode.SJF =>
+          new SJFSchedulableBuilder(rootPool)
       }
     }
     logInfo("prepare for building pools")

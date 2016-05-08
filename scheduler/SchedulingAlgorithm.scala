@@ -96,15 +96,15 @@ private[spark] class GPSSchedulingAlgorithm extends SchedulingAlgorithm {
   }
 }
 
-private[spark] class LCPSchedulingAlgorithm extends SchedulingAlgorithm {
+private[spark] class SJFSchedulingAlgorithm extends SchedulingAlgorithm {
   override def comparator(s1: Schedulable, s2: Schedulable): Boolean = {
-    val CPL1 = s1.CPL
-    val CPL2 = s2.CPL
-    var res = math.signum(CPL2 - CPL1)
+    val jobRunTime1 = s1.jobRunTime
+    val jobRunTime2 = s2.jobRunTime
+    var res = math.signum(jobRunTime1 - jobRunTime2)
     if (res == 0) {
-      val stageId1 = s1.stageId
-      val stageId2 = s2.stageId
-      res = math.signum(stageId1 - stageId2)
+      val jobId1 = s1.jobId
+      val jobId2 = s2.jobId
+      res = math.signum(jobId1 - jobId2)
     }
     if (res < 0) {
       true

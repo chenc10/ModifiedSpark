@@ -156,7 +156,7 @@ private[spark] class FairSchedulableBuilder(val rootPool: Pool, conf: SparkConf)
 // add by cc
 private[spark] class GPSSchedulableBuilder(val rootPool: Pool)
   extends SchedulableBuilder with Logging {
-  val DEFAULT_SCHEDULING_MODE = SchedulingMode.LCP
+  val DEFAULT_SCHEDULING_MODE = SchedulingMode.FIFO
   val DEFAULT_MINIMUM_SHARE = 0
   val DEFAULT_WEIGHT = 1
 
@@ -167,6 +167,35 @@ private[spark] class GPSSchedulableBuilder(val rootPool: Pool)
 
   override def addTaskSetManager(manager: Schedulable, properties: Properties) {
     logInfo("addTaskSetManager in GPS")
+    val poolName = manager.jobId.toString
+    var parentPool = rootPool.getSchedulableByName(poolName)
+    if (parentPool == null) {
+      // A new job has came; create a new pool for it
+      parentPool = new Pool(poolName, DEFAULT_SCHEDULING_MODE, DEFAULT_MINIMUM_SHARE,
+        DEFAULT_WEIGHT)
+      parentPool.setPoolProperty(manager.jobId, properties.getProperty("job.profiledInfo"))
+      rootPool.addSchedulable(parentPool)
+      logInfo("######### Created pool(jobId) %s, schedulingMode: %s)"
+        .format(poolName, DEFAULT_SCHEDULING_MODE))
+    }
+    parentPool.addSchedulable(manager)
+    logInfo("Added task set " + manager.name + " tasks to pool " + poolName)
+  }
+}
+
+private[spark] class SJFSchedulableBuilder(val rootPool: Pool)
+  extends SchedulableBuilder with Logging {
+  val DEFAULT_SCHEDULING_MODE = SchedulingMode.FIFO
+  val DEFAULT_MINIMUM_SHARE = 0
+  val DEFAULT_WEIGHT = 1
+
+  override def buildPools() {
+    // nothing
+    logInfo("buildPools for SJF Mode")
+  }
+
+  override def addTaskSetManager(manager: Schedulable, properties: Properties) {
+    logInfo("addTaskSetManager in SJF")
     val poolName = manager.jobId.toString
     var parentPool = rootPool.getSchedulableByName(poolName)
     if (parentPool == null) {

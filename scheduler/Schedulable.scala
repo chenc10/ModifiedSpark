@@ -39,13 +39,12 @@ private[spark] trait Schedulable {
   def stageId: Int
   def name: String
 
-	// add by cc
-  def CPL: Int
-	def jobId: Int
+  // add by cc
+  def jobId: Int
 	def jobSubmittingTime: Int
 	def jobRunTime: Int
 	var GPSCompletionTime: Int
-  var remainingTime: Int
+//  var remainingTime: Int
   def setPoolProperty(P: Int, S: String): Unit
 
   def addSchedulable(schedulable: Schedulable): Unit

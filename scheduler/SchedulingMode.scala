@@ -26,5 +26,5 @@ object SchedulingMode extends Enumeration {
 
   type SchedulingMode = Value
   // add by cc
-  val GPS, LCP, FAIR, FIFO, NONE = Value
+  val GPS, SJF, FAIR, FIFO, NONE = Value
 }
