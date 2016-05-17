@@ -169,8 +169,8 @@ private[spark] class TaskSchedulerImpl(
     logInfo("Adding task set " + taskSet.id + " with " + tasks.length + " tasks")
     this.synchronized {
       val manager = createTaskSetManager(taskSet, maxTaskFailures)
-      logInfo("##### Create TaskSetManager: taskSMID: %d, taskSId: %s, taskNum: %d"
-        .format(manager.stageId, manager.taskSet.id, manager.taskSet.tasks.size))
+      logInfo("##### Create TaskSetManager: taskSMID: %d, taskSId: %d, taskNum: %d"
+        .format(manager.stageId, manager.taskSet.stageId, manager.taskSet.tasks.size))
       val stage = taskSet.stageId
       val stageTaskSets =
         taskSetsByStageIdAndAttempt.getOrElseUpdate(stage, new HashMap[Int, TaskSetManager])
@@ -290,7 +290,7 @@ private[spark] class TaskSchedulerImpl(
     // Mark each slave as alive and remember its hostname
     // Also track if new executor is added
     var newExecAvail = false
-    logInfo("##### Get Offer size: %d".format(offers.size))
+    // logInfo("##### Get Offer size: %d".format(offers.size))
     for (o <- offers) {
       executorIdToHost(o.executorId) = o.host
       executorIdToTaskCount.getOrElseUpdate(o.executorId, 0)
@@ -323,8 +323,8 @@ private[spark] class TaskSchedulerImpl(
     var launchedTask = false
     for (taskSet <- sortedTaskSets; maxLocality <- taskSet.myLocalityLevels) {
       do {
-        logInfo("##### resourceOffer to tsmId: %d, tsId:%s, tsn:%d"
-          .format(taskSet.stageId, taskSet.taskSet.id, taskSet.taskSet.tasks.size))
+        logInfo("##### resourceOffer to tsmId: %d, tsId:%d, tsn:%d"
+          .format(taskSet.stageId, taskSet.taskSet.stageId, taskSet.taskSet.tasks.size))
         launchedTask = resourceOfferSingleTaskSet(
             taskSet, maxLocality, shuffledOffers, availableCpus, tasks)
       } while (launchedTask)
