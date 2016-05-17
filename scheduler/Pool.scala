@@ -253,9 +253,9 @@ private[spark] class Pool(
    	}
     if (schedulingMode == SchedulingMode.GPS) {
       for (taskSetManager <- sortedTaskSetQueue) {
-        logInfo("##### ##### Print sortedResult in Queue: JobId-%d StageId-%d | GPSCT-%d"
-          .format(taskSetManager.jobId, taskSetManager.stageId,
-            taskSetManager.parent.GPSCompletionTime))
+        logInfo("##### ##### Print sortedResult in Queue: JobId-%d StId-%d tsID:%d tn-%s| GPSCT-%d"
+          .format(taskSetManager.jobId, taskSetManager.stageId,taskSetManager.taskSet.id,
+            taskSetManager.taskSet.tasks.size, taskSetManager.parent.GPSCompletionTime))
       }
       logInfo("##### ##### End printing in GPS")
     }
