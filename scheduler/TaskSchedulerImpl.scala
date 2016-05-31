@@ -323,8 +323,8 @@ private[spark] class TaskSchedulerImpl(
     var launchedTask = false
     for (taskSet <- sortedTaskSets; maxLocality <- taskSet.myLocalityLevels) {
       do {
-        logInfo("##### resourceOffer to tsmId: %d, tsId:%d, tsn:%d"
-          .format(taskSet.stageId, taskSet.taskSet.stageId, taskSet.taskSet.tasks.size))
+//        logInfo("##### resourceOffer to tsmId: %d, tsId:%d, tsn:%d"
+//          .format(taskSet.stageId, taskSet.taskSet.stageId, taskSet.taskSet.tasks.size))
         launchedTask = resourceOfferSingleTaskSet(
             taskSet, maxLocality, shuffledOffers, availableCpus, tasks)
       } while (launchedTask)

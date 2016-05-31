@@ -272,7 +272,7 @@ private[spark] class Pool(
       for (taskSetManager <- sortedTaskSetQueue) {
         logInfo("##### ##### Print sortedResult in Queue: JobId-%d StageId-%d | RunningTasks-%d"
           .format(taskSetManager.jobId, taskSetManager.stageId,
-            taskSetManager.parent.runningTasks))
+            taskSetManager.runningTasks))
       }
       logInfo("##### ##### End printing in FAIR")
     }
