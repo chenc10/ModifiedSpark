@@ -172,6 +172,8 @@ private[spark] class Pool(
   var jobSubmittingTime = 0
   var jobRunTime = 0
   var GPSCompletionTime = 0
+  var jobRemainingRunTime = 0
+  var taskRunTime = 0
 //  var remainingTime = 0
 
   var taskSetSchedulingAlgorithm: SchedulingAlgorithm = {
@@ -288,13 +290,14 @@ private[spark] class Pool(
 
   def decreaseRunningTasks(taskNum: Int) {
     runningTasks -= taskNum
+    jobRemainingRunTime -= taskRunTime
     if (parent != null) {
       parent.decreaseRunningTasks(taskNum)
     }
   }
 	// add by cc
 
-  def readJobInfo(P: Int, S: String): (Int, Int) = {
+  def readJobInfo(P: Int, S: String): (Int, Int, Int) = {
     // assert( S != null)
     var TmpS = S
     if (TmpS == null) {
@@ -305,18 +308,23 @@ private[spark] class Pool(
       }
       if (TmpS == null){
         logWarning("##### ##### Invalid file: job.profiledInfo")
-        return (0, 0)
+        return (0, 0, 0)
       }
     }
     val jobInfos = TmpS.split(' ')
     for ( jobInfo <- jobInfos) {
       val tmpJobInfo = jobInfo.split('+')
+      if (tmpJobInfo.size < 4) {
+        if (tmpJobInfo(0).toInt == P) {
+          return (tmpJobInfo(1).toInt, tmpJobInfo(2).toInt, 0)
+        }
+      }
       if (tmpJobInfo(0).toInt == P){
-        return (tmpJobInfo(1).toInt, tmpJobInfo(2).toInt)
+        return (tmpJobInfo(1).toInt, tmpJobInfo(2).toInt, tmpJobInfo(3).toInt)
       }
     }
     logWarning("##### ##### No profiled properties for job_%d, read from File".format(P))
-    (0, 0)
+    (0, 0, 0)
   }
 
   override def setPoolProperty(P: Int, S: String){
@@ -326,6 +334,7 @@ private[spark] class Pool(
     jobId = P
     jobSubmittingTime = thisJobInfo._1
     jobRunTime = thisJobInfo._2
-//    remainingTime = jobRunTime
+    taskRunTime = thisJobInfo._3
+    jobRemainingRunTime = jobRunTime
   }
 }

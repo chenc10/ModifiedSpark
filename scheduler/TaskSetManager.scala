@@ -101,13 +101,18 @@ private[spark] class TaskSetManager(
 	// add by cc
   var jobId = taskSet.priority
   var jobRunTime = 0
+  var jobRemainingRunTime = 0
   var jobSubmittingTime = 0
+  var taskRunTime = 0
   var GPSCompletionTime = 0
 //  var remainingTime = 0
   override def setPoolProperty(P: Int, S: String){
     jobId = P
+    jobRemainingRunTime = 0
     jobSubmittingTime = 0
+    taskRunTime = 0
     jobRunTime = 0
+    GPSCompletionTime = 0
   }
 
   val runningTasksSet = new HashSet[Long]
